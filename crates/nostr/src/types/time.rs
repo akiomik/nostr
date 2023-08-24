@@ -3,18 +3,16 @@
 
 //! Time
 
-use std::fmt;
-
-use std::time::Duration;
+use core::fmt;
+use core::ops::{Add, Sub};
+use core::str::FromStr;
+use core::time::Duration;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::{
-    ops::{Add, Sub},
-    str::FromStr,
-};
 
 #[cfg(target_arch = "wasm32")]
 use instant::SystemTime;
+use secp256k1::rand;
 use serde::{Deserialize, Serialize};
 
 #[cfg(target_arch = "wasm32")]
@@ -34,6 +32,15 @@ impl Timestamp {
         Self(ts as i64)
     }
 
+    /// Get tweaked UNIX timestamp
+    ///
+    /// Remove a random number of seconds from now (max 65535 secs)
+    pub fn tweaked() -> Self {
+        let mut now: Timestamp = Self::now();
+        now.tweak();
+        now
+    }
+
     /// Get timestamp as [`u64`]
     pub fn as_u64(&self) -> u64 {
         if self.0 >= 0 {
@@ -46,6 +53,12 @@ impl Timestamp {
     /// Get timestamp as [`i64`]
     pub fn as_i64(&self) -> i64 {
         self.0
+    }
+
+    /// Remove a random number of seconds from [`Timestamp`] (max 65535 secs)
+    pub fn tweak(&mut self) {
+        let secs: u16 = rand::random();
+        self.0 -= secs as i64;
     }
 
     /// Convert [`Timestamp`] to human datetime
