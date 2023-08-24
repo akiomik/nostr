@@ -19,6 +19,8 @@ use super::{Event, EventId, UnsignedEvent};
 use crate::key::{self, Keys};
 #[cfg(feature = "nip04")]
 use crate::nips::nip04;
+#[cfg(feature = "nip44")]
+use crate::nips::nip44::{self, Version};
 #[cfg(feature = "nip46")]
 use crate::nips::nip46::Message as NostrConnectMessage;
 use crate::nips::nip53::LiveEvent;
@@ -44,6 +46,9 @@ pub enum Error {
     /// NIP04 error
     #[cfg(feature = "nip04")]
     NIP04(nip04::Error),
+    /// NIP44 error
+    #[cfg(feature = "nip44")]
+    NIP44(nip44::Error),
     /// NIP58 error
     NIP58(nip58::Error),
 }
@@ -59,6 +64,8 @@ impl fmt::Display for Error {
             Self::Unsigned(e) => write!(f, "Unsigned event: {e}"),
             #[cfg(feature = "nip04")]
             Self::NIP04(e) => write!(f, "NIP04: {e}"),
+            #[cfg(feature = "nip44")]
+            Self::NIP44(e) => write!(f, "NIP44: {e}"),
             Self::NIP58(e) => write!(f, "NIP58: {e}"),
         }
     }
@@ -95,6 +102,13 @@ impl From<nip04::Error> for Error {
     }
 }
 
+#[cfg(feature = "nip44")]
+impl From<nip44::Error> for Error {
+    fn from(e: nip44::Error) -> Self {
+        Self::NIP44(e)
+    }
+}
+
 impl From<nip58::Error> for Error {
     fn from(e: nip58::Error) -> Self {
         Self::NIP58(e)
@@ -123,14 +137,28 @@ impl EventBuilder {
     }
 
     /// Build [`Event`]
+    ///
+    /// Particular cases:
+    /// * If the [`Kind`] is `Seal` or `GiftWrap`, the [`Timestamp`] will be tweaked (timestamp of the past)
+    /// * If the [`Kind`] is `GiftWrap`, the [`Keys`] used will be generated randomly
     pub fn to_event(self, keys: &Keys) -> Result<Event, Error> {
+        let keys: Keys = match self.kind {
+            Kind::GiftWrap => Keys::generate(),
+            _ => keys.clone(),
+        };
         let pubkey: XOnlyPublicKey = keys.public_key();
-        Ok(self.to_unsigned_event(pubkey).sign(keys)?)
+        Ok(self.to_unsigned_event(pubkey).sign(&keys)?)
     }
 
     /// Build [`UnsignedEvent`]
+    ///
+    /// Particular cases:
+    /// * If the [`Kind`] is `Seal` or `GiftWrap`, the [`Timestamp`] will be tweaked (timestamp of the past)
     pub fn to_unsigned_event(self, pubkey: XOnlyPublicKey) -> UnsignedEvent {
-        let created_at: Timestamp = Timestamp::now();
+        let created_at: Timestamp = match self.kind {
+            Kind::Seal | Kind::GiftWrap => Timestamp::tweaked(),
+            _ => Timestamp::now(),
+        };
         let id = EventId::new(&pubkey, created_at, &self.kind, &self.tags, &self.content);
         UnsignedEvent {
             id,
@@ -143,12 +171,23 @@ impl EventBuilder {
     }
 
     /// Build POW [`Event`]
+    ///
+    /// Particular cases:
+    /// * If the [`Kind`] is `Seal` or `GiftWrap`, the [`Timestamp`] will be tweaked (timestamp of the past)
+    /// * If the [`Kind`] is `GiftWrap`, the [`Keys`] used will be generated randomly
     pub fn to_pow_event(self, keys: &Keys, difficulty: u8) -> Result<Event, Error> {
+        let keys: Keys = match self.kind {
+            Kind::GiftWrap => Keys::generate(),
+            _ => keys.clone(),
+        };
         let pubkey: XOnlyPublicKey = keys.public_key();
-        Ok(self.to_unsigned_pow_event(pubkey, difficulty).sign(keys)?)
+        Ok(self.to_unsigned_pow_event(pubkey, difficulty).sign(&keys)?)
     }
 
     /// Build unsigned POW [`Event`]
+    ///
+    /// Particular cases:
+    /// * If the [`Kind`] is `Seal` or `GiftWrap`, the [`Timestamp`] will be tweaked (timestamp of the past)
     pub fn to_unsigned_pow_event(self, pubkey: XOnlyPublicKey, difficulty: u8) -> UnsignedEvent {
         let mut nonce: u128 = 0;
         let mut tags: Vec<Tag> = self.tags;
@@ -160,7 +199,10 @@ impl EventBuilder {
 
             tags.push(Tag::POW { nonce, difficulty });
 
-            let created_at: Timestamp = Timestamp::now();
+            let created_at: Timestamp = match self.kind {
+                Kind::Seal | Kind::GiftWrap => Timestamp::tweaked(),
+                _ => Timestamp::now(),
+            };
             let id = EventId::new(&pubkey, created_at, &self.kind, &tags, &self.content);
 
             if nip13::get_leading_zero_bits(id.inner()) >= difficulty {
@@ -859,6 +901,47 @@ impl EventBuilder {
     pub fn http_auth(data: HttpData) -> Self {
         let tags: Vec<Tag> = data.into();
         Self::new(Kind::HttpAuth, "", &tags)
+    }
+
+    /// Seal
+    ///
+    /// <https://github.com/nostr-protocol/nips/blob/master/59.md>
+    #[cfg(feature = "nip59")]
+    pub fn seal(
+        sender_keys: &Keys,
+        receiver_pubkey: &XOnlyPublicKey,
+        rumor: UnsignedEvent,
+    ) -> Result<Self, Error> {
+        let content = nip44::encrypt(
+            &sender_keys.secret_key()?,
+            receiver_pubkey,
+            rumor.as_json(),
+            Version::XChaCha20,
+        )?;
+        Ok(Self::new(Kind::Seal, content, &[]))
+    }
+
+    /// Gift Wrap
+    ///
+    /// <https://github.com/nostr-protocol/nips/blob/master/59.md>
+    #[cfg(feature = "nip59")]
+    pub fn gift_wrap(
+        sender_keys: &Keys,
+        receiver_pubkey: &XOnlyPublicKey,
+        rumor: UnsignedEvent,
+    ) -> Result<Self, Error> {
+        let seal: Event = Self::seal(sender_keys, receiver_pubkey, rumor)?.to_event(sender_keys)?;
+        let content: String = nip44::encrypt(
+            &sender_keys.secret_key()?,
+            receiver_pubkey,
+            seal.as_json(),
+            Version::XChaCha20,
+        )?;
+        Ok(Self::new(
+            Kind::GiftWrap,
+            content,
+            &[Tag::PubKey(*receiver_pubkey, None)],
+        ))
     }
 }
 

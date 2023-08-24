@@ -86,6 +86,10 @@ pub enum Kind {
     ProfileBadges,
     /// Badge Definition (NIP58)
     BadgeDefinition,
+    /// Seal (NIP59)
+    Seal,
+    /// Gift Wrap (NIP59)
+    GiftWrap,
     /// Long-form Text Note (NIP23)
     LongFormTextNote,
     /// Application-specific Data (NIP78)
@@ -163,6 +167,8 @@ impl From<u64> for Kind {
             1311 => Self::LiveEventMessage,
             30008 => Self::ProfileBadges,
             30009 => Self::BadgeDefinition,
+            13 => Self::Seal,
+            1059 => Self::GiftWrap,
             30023 => Self::LongFormTextNote,
             30078 => Self::ApplicationSpecificData,
             1063 => Self::FileMetadata,
@@ -215,6 +221,8 @@ impl From<Kind> for u64 {
             Kind::LiveEventMessage => 1311,
             Kind::ProfileBadges => 30008,
             Kind::BadgeDefinition => 30009,
+            Kind::Seal => 13,
+            Kind::GiftWrap => 1059,
             Kind::LongFormTextNote => 30023,
             Kind::ApplicationSpecificData => 30078,
             Kind::FileMetadata => 1063,

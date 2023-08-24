@@ -100,6 +100,7 @@ The following crate feature flags are available:
 | `nip44`             |   Yes   | Enable NIP-44: Encrypted Payloads (Versioned)                                                                                        |
 | `nip46`             |   Yes   | Enable NIP-46: Nostr Connect                                                                                               |
 | `nip47`             |   Yes   | Enable NIP-47: Nostr Wallet Connect                                                                                        |
+| `nip59`             |   Yes   | Enable NIP-59: Gift Wrap                                                                                               |
 
 ## Supported NIPs
 
@@ -147,6 +148,7 @@ The following crate feature flags are available:
 | ✅         | [56 - Reporting](https://github.com/nostr-protocol/nips/blob/master/56.md)                                                          |
 | ✅         | [57 - Lightning Zaps](https://github.com/nostr-protocol/nips/blob/master/57.md)                                                     |
 | ✅         | [58 - Badges](https://github.com/nostr-protocol/nips/blob/master/58.md)                                                             |
+| ✅         | [59 - Gift Wrap](https://github.com/nostr-protocol/nips/blob/master/59.md)                                                             |
 | ✅         | [65 - Relay List Metadata](https://github.com/nostr-protocol/nips/blob/master/65.md)                                                |
 | ✅         | [78 - Arbitrary custom app data](https://github.com/nostr-protocol/nips/blob/master/78.md)                                          |
 | ❌         | [89 - Recommended Application Handlers](https://github.com/nostr-protocol/nips/blob/master/89.md)                                   |

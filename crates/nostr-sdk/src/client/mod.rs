@@ -19,6 +19,8 @@ use nostr::nips::nip46::{NostrConnectMetadata, NostrConnectURI, Request, Respons
 use nostr::nips::nip94::FileMetadata;
 use nostr::types::metadata::Error as MetadataError;
 use nostr::url::Url;
+#[cfg(feature = "nip59")]
+use nostr::UnsignedEvent;
 use nostr::{
     ChannelId, ClientMessage, Contact, Entity, Event, EventBuilder, EventId, Filter, Keys, Kind,
     Metadata, Result, Tag,
@@ -1251,6 +1253,20 @@ impl Client {
     {
         let builder = EventBuilder::file_metadata(description, metadata);
         self.send_event_builder(builder).await
+    }
+
+    /// Gift Wrap
+    ///
+    /// <https://github.com/nostr-protocol/nips/blob/master/59.md>
+    #[cfg(feature = "nip59")]
+    pub async fn gift_wrap(
+        &self,
+        receiver: XOnlyPublicKey,
+        rumor: UnsignedEvent,
+    ) -> Result<EventId, Error> {
+        let builder: EventBuilder = EventBuilder::gift_wrap(&self.keys, &receiver, rumor)?;
+        let event: Event = builder.to_event(&self.keys)?;
+        self.send_event(event).await
     }
 
     /// Get a list of channels
