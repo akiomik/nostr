@@ -1233,4 +1233,22 @@ mod tests {
         assert_eq!(profile_badges.tags, example_event.tags);
         Ok(())
     }
+
+    #[test]
+    #[cfg(feature = "nip59")]
+    fn test_gift_wrap_builder() -> Result<()> {
+        let keys = Keys::new(SecretKey::from_str(
+            "6b911fd37cdf5c81d4c0adb1ab7fa822ed253ab0ad9aa18d77257c88b29b718e",
+        )?);
+        let receiver = XOnlyPublicKey::from_str(
+            "32e1827635450ebb3c5a7d12c1f8e7b2b514439ac10a67eef3d9fd9c5c68e245",
+        )?;
+
+        let rumor = EventBuilder::new_text_note("Test", &[]).to_unsigned_event(keys.public_key());
+        let event: Event = EventBuilder::gift_wrap(&keys, &receiver, rumor)?.to_event(&keys)?;
+
+        assert_ne!(event.pubkey, keys.public_key());
+
+        Ok(())
+    }
 }
