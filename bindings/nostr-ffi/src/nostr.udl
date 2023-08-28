@@ -334,6 +334,9 @@ interface EventBuilder {
 
     [Name=file_metadata]
     constructor(string description, FileMetadata metadata);
+
+    [Throws=NostrError, Name=gift_wrap]
+    constructor(Keys sender_keys, PublicKey receiver_pubkey, UnsignedEvent rumor);
 };
 
 interface Contact {

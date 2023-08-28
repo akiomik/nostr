@@ -272,4 +272,18 @@ impl EventBuilder {
             builder: EventBuilderSdk::file_metadata(description, metadata.as_ref().deref().clone()),
         }
     }
+
+    pub fn gift_wrap(
+        sender_keys: Arc<Keys>,
+        receiver_pubkey: Arc<PublicKey>,
+        rumor: Arc<UnsignedEvent>,
+    ) -> Result<Self> {
+        Ok(Self {
+            builder: EventBuilderSdk::gift_wrap(
+                sender_keys.as_ref().deref(),
+                receiver_pubkey.as_ref().deref(),
+                rumor.as_ref().deref().clone(),
+            )?,
+        })
+    }
 }
