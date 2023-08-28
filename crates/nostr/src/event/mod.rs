@@ -26,12 +26,12 @@ pub use self::unsigned::UnsignedEvent;
 use crate::{Timestamp, SECP256K1};
 
 /// [`Event`] error
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// Invalid signature
     InvalidSignature,
     /// Error serializing or deserializing JSON data
-    Json(serde_json::Error),
+    Json(String),
     /// Secp256k1 error
     Secp256k1(secp256k1::Error),
     /// Hex decoding error
@@ -58,7 +58,7 @@ impl fmt::Display for Error {
 
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
-        Self::Json(e)
+        Self::Json(e.to_string())
     }
 }
 

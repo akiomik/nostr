@@ -12,12 +12,12 @@ use serde::{Deserialize, Serialize};
 use crate::{Event, EventId, Keys, Kind, Tag, Timestamp};
 
 /// [`UnsignedEvent`] error
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// Key error
     Key(crate::key::Error),
     /// Error serializing or deserializing JSON data
-    Json(serde_json::Error),
+    Json(String),
     /// Secp256k1 error
     Secp256k1(secp256k1::Error),
     /// Event error
@@ -45,7 +45,7 @@ impl From<crate::key::Error> for Error {
 
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
-        Self::Json(e)
+        Self::Json(e.to_string())
     }
 }
 

@@ -19,6 +19,9 @@ namespace nostr {
     string nip44_encrypt(SecretKey secret_key, PublicKey public_key, string content, NIP44Version version);
     [Throws=NostrError]
     string nip44_decrypt(SecretKey secret_key, PublicKey public_key, string payload);
+
+    [Throws=NostrError]
+    UnsignedEvent extract_rumor_from_gift_wrap(Keys keys, Event gift_wrap);
 };
 
 [Error]

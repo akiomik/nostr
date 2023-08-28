@@ -32,6 +32,7 @@ mod ffi {
     pub use crate::nips::nip44::{nip44_decrypt, nip44_encrypt};
     pub use crate::nips::nip46::NostrConnectURI;
     pub use crate::nips::nip57::ZapRequestData;
+    pub use crate::nips::nip59::extract_rumor_from_gift_wrap;
     pub use crate::nips::nip94::FileMetadata;
     pub use crate::types::{Contact, ImageDimensions, Metadata, Profile, Timestamp};
     pub use crate::util::generate_shared_key;
