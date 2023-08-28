@@ -47,13 +47,9 @@ impl EventBuilder {
         Ok(Arc::new(event.into()))
     }
 
-    pub fn to_pow_event(&self, keys: Arc<Keys>, difficulty: u8) -> Result<Arc<Event>> {
-        Ok(Arc::new(
-            self.builder
-                .clone()
-                .to_pow_event(keys.deref(), difficulty)?
-                .into(),
-        ))
+    pub fn to_anonymous_event(&self) -> Result<Arc<Event>> {
+        let event = self.builder.clone().to_anonymous_event()?;
+        Ok(Arc::new(event.into()))
     }
 
     pub fn to_unsigned_event(&self, public_key: Arc<PublicKey>) -> Arc<UnsignedEvent> {
@@ -63,6 +59,20 @@ impl EventBuilder {
                 .to_unsigned_event(*public_key.as_ref().deref())
                 .into(),
         )
+    }
+
+    pub fn to_pow_event(&self, keys: Arc<Keys>, difficulty: u8) -> Result<Arc<Event>> {
+        Ok(Arc::new(
+            self.builder
+                .clone()
+                .to_pow_event(keys.deref(), difficulty)?
+                .into(),
+        ))
+    }
+
+    pub fn to_anonymous_pow_event(&self, difficulty: u8) -> Result<Arc<Event>> {
+        let event = self.builder.clone().to_anonymous_pow_event(difficulty)?;
+        Ok(Arc::new(event.into()))
     }
 
     pub fn to_unsigned_pow_event(

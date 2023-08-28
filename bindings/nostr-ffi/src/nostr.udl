@@ -280,8 +280,12 @@ interface EventBuilder {
     [Throws=NostrError]
     Event to_event(Keys keys);
     [Throws=NostrError]
-    Event to_pow_event(Keys keys, u8 difficulty);
+    Event to_anonymous_event();
     UnsignedEvent to_unsigned_event(PublicKey public_key);
+    [Throws=NostrError]
+    Event to_pow_event(Keys keys, u8 difficulty);
+    [Throws=NostrError]
+    Event to_anonymous_pow_event(u8 difficulty);
     UnsignedEvent to_unsigned_pow_event(PublicKey public_key, u8 difficulty);
 
     [Name=set_metadata]

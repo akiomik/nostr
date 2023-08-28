@@ -142,10 +142,18 @@ impl EventBuilder {
     /// * If the [`Kind`] is `Seal` or `GiftWrap`, the [`Timestamp`] will be tweaked (timestamp of the past)
     /// * If the [`Kind`] is `GiftWrap`, the [`Keys`] used will be generated randomly
     pub fn to_event(self, keys: &Keys) -> Result<Event, Error> {
-        let keys: Keys = match self.kind {
-            Kind::GiftWrap => Keys::generate(),
-            _ => keys.clone(),
-        };
+        match self.kind {
+            Kind::GiftWrap => self.to_anonymous_event(),
+            _ => {
+                let pubkey: XOnlyPublicKey = keys.public_key();
+                Ok(self.to_unsigned_event(pubkey).sign(keys)?)
+            }
+        }
+    }
+
+    /// Build [`Event`] with random [`Keys`]
+    pub fn to_anonymous_event(self) -> Result<Event, Error> {
+        let keys = Keys::generate();
         let pubkey: XOnlyPublicKey = keys.public_key();
         Ok(self.to_unsigned_event(pubkey).sign(&keys)?)
     }
@@ -159,9 +167,8 @@ impl EventBuilder {
             Kind::Seal | Kind::GiftWrap => Timestamp::tweaked(),
             _ => Timestamp::now(),
         };
-        let id = EventId::new(&pubkey, created_at, &self.kind, &self.tags, &self.content);
         UnsignedEvent {
-            id,
+            id: EventId::new(&pubkey, created_at, &self.kind, &self.tags, &self.content),
             pubkey,
             created_at,
             kind: self.kind,
@@ -176,10 +183,18 @@ impl EventBuilder {
     /// * If the [`Kind`] is `Seal` or `GiftWrap`, the [`Timestamp`] will be tweaked (timestamp of the past)
     /// * If the [`Kind`] is `GiftWrap`, the [`Keys`] used will be generated randomly
     pub fn to_pow_event(self, keys: &Keys, difficulty: u8) -> Result<Event, Error> {
-        let keys: Keys = match self.kind {
-            Kind::GiftWrap => Keys::generate(),
-            _ => keys.clone(),
-        };
+        match self.kind {
+            Kind::GiftWrap => self.to_anonymous_pow_event(difficulty),
+            _ => {
+                let pubkey: XOnlyPublicKey = keys.public_key();
+                Ok(self.to_unsigned_pow_event(pubkey, difficulty).sign(keys)?)
+            }
+        }
+    }
+
+    /// Build POW [`Event`] with random [`Keys`]
+    pub fn to_anonymous_pow_event(self, difficulty: u8) -> Result<Event, Error> {
+        let keys = Keys::generate();
         let pubkey: XOnlyPublicKey = keys.public_key();
         Ok(self.to_unsigned_pow_event(pubkey, difficulty).sign(&keys)?)
     }
