@@ -121,6 +121,7 @@ pub struct EventBuilder {
     kind: Kind,
     tags: Vec<Tag>,
     content: String,
+    keys: Option<Keys>,
 }
 
 impl EventBuilder {
@@ -133,6 +134,7 @@ impl EventBuilder {
             kind,
             tags: tags.to_vec(),
             content: content.into(),
+            keys: None,
         }
     }
 
@@ -142,18 +144,17 @@ impl EventBuilder {
     /// * If the [`Kind`] is `Seal` or `GiftWrap`, the [`Timestamp`] will be tweaked (timestamp of the past)
     /// * If the [`Kind`] is `GiftWrap`, the [`Keys`] used will be generated randomly
     pub fn to_event(self, keys: &Keys) -> Result<Event, Error> {
-        match self.kind {
-            Kind::GiftWrap => self.to_anonymous_event(),
-            _ => {
-                let pubkey: XOnlyPublicKey = keys.public_key();
-                Ok(self.to_unsigned_event(pubkey).sign(keys)?)
-            }
-        }
+        let keys: Keys = match self.keys {
+            Some(keys) => keys,
+            None => *keys,
+        };
+        let pubkey: XOnlyPublicKey = keys.public_key();
+        Ok(self.to_unsigned_event(pubkey).sign(&keys)?)
     }
 
     /// Build [`Event`] with random [`Keys`]
     pub fn to_anonymous_event(self) -> Result<Event, Error> {
-        let keys = Keys::generate();
+        let keys: Keys = Keys::generate();
         let pubkey: XOnlyPublicKey = keys.public_key();
         Ok(self.to_unsigned_event(pubkey).sign(&keys)?)
     }
@@ -183,13 +184,12 @@ impl EventBuilder {
     /// * If the [`Kind`] is `Seal` or `GiftWrap`, the [`Timestamp`] will be tweaked (timestamp of the past)
     /// * If the [`Kind`] is `GiftWrap`, the [`Keys`] used will be generated randomly
     pub fn to_pow_event(self, keys: &Keys, difficulty: u8) -> Result<Event, Error> {
-        match self.kind {
-            Kind::GiftWrap => self.to_anonymous_pow_event(difficulty),
-            _ => {
-                let pubkey: XOnlyPublicKey = keys.public_key();
-                Ok(self.to_unsigned_pow_event(pubkey, difficulty).sign(keys)?)
-            }
-        }
+        let keys: Keys = match self.keys {
+            Some(keys) => keys,
+            None => *keys,
+        };
+        let pubkey: XOnlyPublicKey = keys.public_key();
+        Ok(self.to_unsigned_pow_event(pubkey, difficulty).sign(&keys)?)
     }
 
     /// Build POW [`Event`] with random [`Keys`]
@@ -946,17 +946,19 @@ impl EventBuilder {
         rumor: UnsignedEvent,
     ) -> Result<Self, Error> {
         let seal: Event = Self::seal(sender_keys, receiver_pubkey, rumor)?.to_event(sender_keys)?;
+        let keys: Keys = Keys::generate();
         let content: String = nip44::encrypt(
-            &sender_keys.secret_key()?,
+            &keys.secret_key()?,
             receiver_pubkey,
             seal.as_json(),
             Version::XChaCha20,
         )?;
-        Ok(Self::new(
-            Kind::GiftWrap,
+        Ok(Self {
+            kind: Kind::GiftWrap,
             content,
-            &[Tag::PubKey(*receiver_pubkey, None)],
-        ))
+            tags: vec![Tag::PubKey(*receiver_pubkey, None)],
+            keys: Some(keys),
+        })
     }
 }
 

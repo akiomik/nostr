@@ -14,6 +14,6 @@ pub fn extract_rumor_from_gift_wrap(
     gift_wrap: Arc<Event>,
 ) -> Result<Arc<UnsignedEvent>> {
     Ok(Arc::new(
-        nip59::extract_rumor(keys.as_ref().deref(), gift_wrap.as_ref().deref().clone())?.into(),
+        nip59::extract_rumor(keys.as_ref().deref(), gift_wrap.as_ref().deref())?.into(),
     ))
 }
